@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>ArcGIS - Outil Rectangle Unique</title>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.28/"></script>
+
+    <style>
+        body { display: flex; height: 100vh; margin: 0; font-family: 'Segoe UI', sans-serif; }
+        #viewDiv { flex: 1; position: relative; background-color: #eee; }
+        #sidePanel { width: 350px; padding: 15px; background: #242424; color: white; display: flex; flex-direction: column; box-shadow: -2px 0 10px rgba(0,0,0,0.3); }
+        
+        .header-panel { border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 15px; }
+        h2 { margin: 0; font-size: 1.2em; }
+
+        .filter-panel { 
+            padding-bottom: 10px; 
+            margin-bottom: 10px; 
+            border-bottom: 1px solid #444; 
+        }
+        .filter-panel h3 {
+            margin: 0 0 10px 0;
+            font-size: 1em;
+            font-weight: bold;
+        }
+        #decades-filter div {
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+        }
+        #decades-filter label {
+            cursor: pointer;
+            font-size: 0.95em;
+        }
+        #decades-filter input {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        
+        #liste { flex: 1; overflow-y: auto; margin-bottom: 15px; }
+        
+        .item-card { 
+            position: relative; background: #333; padding: 12px; margin-bottom: 10px; 
+            border-left: 5px solid #0079c1; border-radius: 4px;
+        }
+        .item-card strong { color: #00b0ff; }
+        
+        .btn-remove { position: absolute; top: 5px; right: 10px; color: #888; cursor: pointer; font-size: 1.3em; line-height: 1; }
+        .btn-remove:hover { color: #ff4d4d; }
+
+        .btn-clear { width: 100%; padding: 10px; background-color: #d9534f; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        .btn-csv { width: 100%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        .limit-warning { color: #ff4d4d; font-weight: bold; font-size: 0.9em; margin-bottom: 10px; display: none; }
+        #empty-msg { color: #888; font-style: italic; }
+
+        /* Ajustement du widget Sketch pour ne montrer qu'un bouton */
+        .esri-sketch__panel { background: transparent !important; box-shadow: none !important; }
+    </style>
+</head>
+
+<body>
+    <div id="viewDiv"></div>
+    <div id="sidePanel">
+        <div class="header-panel">
+            <h2>Sélection (<span id="count">0</span>/10)</h2>
+            <div id="warningMsg" class="limit-warning">⚠️ Limite de 10 éléments atteinte !</div>
+        </div>
+
+        <div class="filter-panel">
+            <h3>Filtrer par décennie</h3>
+            <div id="decades-filter">
+                <!-- Les cases à cocher du filtre seront injectées ici par le script -->
+            </div>
+        </div>
+        
+        <div id="liste">
+            <p id="empty-msg">Utilisez l'outil rectangle sur la carte...</p>
+        </div>
+
+        <div class="footer-panel">
+            <button id="clearBtn" class="btn-clear">VIDER LA LISTE</button>
+            <button id="zipBtn" class="btn-csv">TÉLÉCHARGER .ZIP</button>
+        </div>
+    </div>
+
+    <script>
+        require([
+          "esri/WebMap",
+          "esri/views/MapView",
+          "esri/layers/GraphicsLayer",
+          "esri/widgets/Sketch"
+        ], function(WebMap, MapView, GraphicsLayer, Sketch) {
+
+            const sketchLayer = new GraphicsLayer();
+            const webmap = new WebMap({ portalItem: { id: "2d913f3787d04c438e02c0b8a2493421" } });
+            webmap.add(sketchLayer);
+
+            const view = new MapView({ container: "viewDiv", map: webmap });
+
+            const listeDiv = document.getElementById("liste");
+            const countSpan = document.getElementById("count");
+            const warningMsg = document.getElementById("warningMsg");
+            
+            let selectionData = [];
+
+            view.when(() => {
+                const allLayers = webmap.layers.filter(layer => layer.type === "feature");
+                allLayers.forEach(layer => {
+                    layer.outFields = ["*"];
+                    // Masquer les points en attendant que le filtre par décennie soit calculé et appliqué.
+                    layer.definitionExpression = "web_disp = 'O' AND 1=0";
+                });
+
+                // --- DÉBUT : LOGIQUE DU FILTRE PAR DÉCENNIE (CODÉ EN DUR) ---
+                const dateField = "date"; // Nom du champ de date à utiliser pour le filtre
+
+                function generateDecadeFilterUI(decades) {
+                    const filterContainer = document.getElementById("decades-filter");
+                    filterContainer.innerHTML = ""; // Vider le conteneur
+
+                    decades.forEach(decade => {
+                        const decadeId = `decade-${decade}`;
+                        // Cocher par défaut la décennie 1930
+                        const isChecked = (decade === 1930);
+
+                        const div = document.createElement("div");
+                        const input = document.createElement("input");
+                        input.type = "checkbox";
+                        input.id = decadeId;
+                        input.value = decade;
+                        input.checked = isChecked;
+                        input.onchange = updateLayerFilter;
+
+                        const label = document.createElement("label");
+                        label.htmlFor = decadeId;
+                        label.innerText = `${decade} - ${decade + 9}`;
+
+                        div.appendChild(input);
+                        div.appendChild(label);
+                        filterContainer.appendChild(div);
+                    });
+                }
+
+                function updateLayerFilter() {
+                    const checkedDecades = [];
+                    document.querySelectorAll("#decades-filter input:checked").forEach(input => {
+                        checkedDecades.push(parseInt(input.value));
+                    });
+
+                    let filterExpression = "1=0"; // Par défaut, ne rien afficher si rien n'est coché
+                    if (checkedDecades.length > 0) {
+                        const decadeClauses = checkedDecades.map(decade => {
+                            const startDate = `${decade}-01-01`;
+                            const endDate = `${decade + 9}-12-31`;
+                            return `(${dateField} >= '${startDate}' AND ${dateField} <= '${endDate}')`;
+                        });
+                        filterExpression = decadeClauses.join(" OR ");
+                    }
+
+                    // Appliquer le filtre à toutes les couches, en conservant le filtre web_disp
+                    allLayers.forEach(layer => {
+                        layer.definitionExpression = `web_disp = 'O' AND (${filterExpression})`;
+                    });
+                }
+
+                // 1. Définir la liste des décennies en dur (1930 à 2029)
+                const decades = [];
+                for (let year = 1930; year <= 2020; year += 10) {
+                    decades.push(year);
+                }
+
+                // 2. Générer l'interface utilisateur du filtre
+                generateDecadeFilterUI(decades);
+                
+                // 3. Appliquer le filtre par défaut à l'ouverture
+                updateLayerFilter();
+                // --- FIN : LOGIQUE DU FILTRE PAR DÉCENNIE (CODÉ EN DUR) ---
+
+                // CONFIGURATION DU WIDGET : Uniquement le rectangle
+                const sketch = new Sketch({
+                    view: view,
+                    layer: sketchLayer,
+                    creationMode: "update",
+                    availableCreateTools: ["rectangle"], 
+                    visibleElements: {
+                        createTools: { point: false, polyline: false, polygon: false, circle: false },
+                        selectionTools: { "lasso-selection": false, "rectangle-selection": false },
+                        settingsMenu: false,
+                        undoRedoMenu: false,
+                        duplicateButton: false
+                    }
+                });
+
+                view.ui.add(sketch, "top-right");
+
+                sketch.on("create", (e) => { 
+                    if (e.state === "complete") { 
+                        rechercherElements(e.graphic.geometry); 
+                        sketchLayer.remove(e.graphic); 
+                    } 
+                });
+            });
+
+            function rechercherElements(geometry) {
+                webmap.layers.forEach(layer => {
+                    if (layer.type === "feature") {
+                        const query = layer.createQuery();
+                        query.geometry = geometry;
+                        query.outFields = ["*"];
+                        // La definitionExpression est déjà appliquée, la requête la respectera
+                        layer.queryFeatures(query).then(res => {
+                            res.features.forEach(f => ajouterALaListe(f.attributes));
+                        });
+                    }
+                });
+            }
+
+            function ajouterALaListe(attr) {
+                if (selectionData.length >= 10) { warningMsg.style.display = "block"; return; }
+                
+                const idKey = attr.OBJECTID || attr.FID || JSON.stringify(attr);
+                if (selectionData.find(item => (item.OBJECTID || item.FID) === idKey)) return;
+
+                if (document.getElementById("empty-msg")) document.getElementById("empty-msg").remove();
+
+                selectionData.push(attr);
+                updateUI();
+
+                const card = document.createElement("div");
+                card.className = "item-card";
+
+                const m = attr["matricule"] || attr["Matricule"] || "Inconnu";
+                let d = attr["date"] || attr["Date"] || "N/A";
+                if (d !== "N/A" && typeof d === 'number') d = new Date(d).toLocaleDateString("fr-FR");
+
+                const removeBtn = document.createElement("span");
+                removeBtn.className = "btn-remove";
+                removeBtn.innerHTML = "&times;";
+                removeBtn.onclick = () => {
+                    selectionData = selectionData.filter(item => (item.OBJECTID || item.FID) !== idKey);
+                    card.remove();
+                    updateUI();
+                };
+
+                card.innerHTML = `<div><strong>Matricule :</strong> ${m}</div><div><strong>Date :</strong> ${d}</div>`;
+                card.appendChild(removeBtn);
+                listeDiv.prepend(card);
+            }
+
+            function updateUI() {
+                countSpan.innerText = selectionData.length;
+                if (selectionData.length < 10) warningMsg.style.display = "none";
+                if (selectionData.length === 0) {
+                    listeDiv.innerHTML = `<p id="empty-msg">Utilisez l'outil rectangle sur la carte...</p>`;
+                }
+            }
+
+            document.getElementById("zipBtn").onclick = () => {
+                if (selectionData.length === 0) {
+                    alert("Aucun élément à exporter.");
+                    return;
+                }
+
+                const matricules = selectionData.map(attr => attr["matricule"] || attr["Matricule"]).filter(Boolean);
+                if (matricules.length === 0) {
+                    alert("Aucun élément avec un matricule valide n'a été trouvé.");
+                    return;
+                }
+
+                // Affiche un retour visuel pour le chargement
+                const btn = document.getElementById("zipBtn");
+                const originalText = btn.innerHTML;
+                btn.innerHTML = "Génération...";
+                btn.disabled = true;
+
+                fetch("/download-zip", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ matricules: matricules })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        // Essayer de lire l'erreur JSON du serveur
+                        return response.json().then(err => { 
+                            throw new Error(err.error || `Erreur HTTP ${response.status}`);
+                        });
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = "selection.zip";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                })
+                .catch(error => {
+                    console.error('Erreur lors du téléchargement:', error);
+                    alert(`Le téléchargement a échoué : ${error.message}`);
+                })
+                .finally(() => {
+                    // Restaure le bouton
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+            };
+
+            document.getElementById("clearBtn").onclick = () => {
+                selectionData = [];
+                updateUI();
+                sketchLayer.removeAll();
+            };
+        });
+    </script>
+</body>
+</html>

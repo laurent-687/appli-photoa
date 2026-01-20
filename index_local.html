@@ -3,23 +3,25 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
-    <title>Photos Aeriennes Nouvelle Calédonie - Outil Rectangle Unique</title>
+    <title>ArcGIS - Outil Rectangle Unique</title>
 
     <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css" />
     <script src="https://js.arcgis.com/4.28/"></script>
 
     <style>
-        body { display: flex; height: 100vh; margin: 0; font-family: 'Segoe UI', sans-serif; }
-        #viewDiv { flex: 1; position: relative; background-color: #eee; }
+        body { display: grid; grid-template-columns: 1fr 350px; height: 100vh; margin: 0; font-family: 'Segoe UI', sans-serif; }
+        #viewDiv { position: relative; background-color: #eee; }
+        #filterPanel { width: 150px; padding: 10px; background: rgba(60, 60, 60, 0.8); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border-radius: 4px; }
         #sidePanel { width: 350px; padding: 15px; background: #242424; color: white; display: flex; flex-direction: column; box-shadow: -2px 0 10px rgba(0,0,0,0.3); }
         
         .header-panel { border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 15px; }
         h2 { margin: 0; font-size: 1.2em; }
 
+        /* The .filter-panel class within #filterPanel can keep its internal styling for the content */
         .filter-panel { 
             padding-bottom: 10px; 
             margin-bottom: 10px; 
-            border-bottom: 1px solid #444; 
+            border-bottom: 1px solid #555; /* Adjusted for better contrast on darker background */
         }
         .filter-panel h3 {
             margin: 0 0 10px 0;
@@ -64,17 +66,18 @@
 
 <body>
     <div id="viewDiv"></div>
-    <div id="sidePanel">
-        <div class="header-panel">
-            <h2>Sélection (<span id="count">0</span>/10)</h2>
-            <div id="warningMsg" class="limit-warning">⚠️ Limite de 10 éléments atteinte !</div>
-        </div>
-
+    <div id="filterPanel" style="display: none;">
         <div class="filter-panel">
             <h3>Filtrer par décennie</h3>
             <div id="decades-filter">
                 <!-- Les cases à cocher du filtre seront injectées ici par le script -->
             </div>
+        </div>
+    </div>
+    <div id="sidePanel">
+        <div class="header-panel">
+            <h2>Sélection (<span id="count">0</span>/10)</h2>
+            <div id="warningMsg" class="limit-warning">⚠️ Limite de 10 éléments atteinte !</div>
         </div>
         
         <div id="liste">
@@ -83,7 +86,7 @@
 
         <div class="footer-panel">
             <button id="clearBtn" class="btn-clear">VIDER LA LISTE</button>
-            <button id="zipBtn" class="btn-csv">TÉLÉCHARGER .ZIP</button>
+            <button id="zipBtn" class="btn-csv">TÉLÉCHARGER LE .ZIP</button>
         </div>
     </div>
 
@@ -104,10 +107,15 @@
             const listeDiv = document.getElementById("liste");
             const countSpan = document.getElementById("count");
             const warningMsg = document.getElementById("warningMsg");
+            const filterPanel = document.getElementById("filterPanel"); // Get the panel
             
             let selectionData = [];
 
             view.when(() => {
+                // Add the filter panel to the top-left of the view
+                view.ui.add(filterPanel, "top-left");
+                filterPanel.style.display = "block"; // Make it visible
+
                 const allLayers = webmap.layers.filter(layer => layer.type === "feature");
                 allLayers.forEach(layer => {
                     layer.outFields = ["*"];
@@ -277,7 +285,7 @@
                 btn.innerHTML = "Génération...";
                 btn.disabled = true;
 
-                fetch("/download-zip", {
+                fetch("http://127.0.0.1:5000/download-zip", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ matricules: matricules })

@@ -1,1 +1,4 @@
 2026-01-20 20:44:21,871 - IP: 127.0.0.1, Fichiers téléchargés: 2
+2026-01-21 10:27:57,615 - IP: 127.0.0.1, Fichiers téléchargés: 3
+{"timestamp": "2026-01-21 10:47:13", "clientIp": "127.0.0.1", "fileCount": 3, "zipSizeBytes": 122347, "foundMatricules": ["1935_IGNx_0001_100_Px_0001_0033", "1935_IGNx_0001_100_Px_0001_0031", "1935_IGNx_0001_100_Px_0001_0032"], "generationTimeSec": 0.01}
+{"timestamp": "2026-01-21 10:47:24", "clientIp": "127.0.0.1", "fileCount": 3, "zipSizeBytes": 122347, "foundMatricules": ["1935_IGNx_0001_100_Px_0001_0033", "1935_IGNx_0001_100_Px_0001_0031", "1935_IGNx_0001_100_Px_0001_0032"], "generationTimeSec": 0.01}

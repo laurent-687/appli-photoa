@@ -3,6 +3,8 @@ import os
 import io
 import zipfile
 import logging
+import time
+import json
 from logging.handlers import RotatingFileHandler
 from flask import Flask, request, send_file, jsonify, send_from_directory
 from flask_cors import CORS
@@ -17,15 +19,16 @@ tech_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(m
 tech_handler.setFormatter(tech_formatter)
 tech_logger.addHandler(tech_handler)
 
-# 2. Logger applicatif (pour le suivi des téléchargements)
+# 2. Logger applicatif (pour le suivi des téléchargements au format JSON)
 app_logger = logging.getLogger('app')
 app_logger.setLevel(logging.INFO)
 # Créer le fichier de log s'il n'existe pas
 if not os.path.exists('download.log'):
     open('download.log', 'a').close()
 # Handler pour écrire dans un fichier avec rotation (max 10MB, 5 fichiers backup)
-app_handler = RotatingFileHandler('download.log', maxBytes=10*1024*1024, backupCount=5)
-app_formatter = logging.Formatter('%(asctime)s - %(message)s')
+app_handler = RotatingFileHandler('download.log', maxBytes=10*1024*1024, backupCount=5, encoding='utf-8')
+# Le formateur ne fait que passer le message brut (qui sera notre JSON)
+app_formatter = logging.Formatter('%(message)s')
 app_handler.setFormatter(app_formatter)
 app_logger.addHandler(app_handler)
 
@@ -51,8 +54,11 @@ def serve_index():
 def download_zip():
     """
     Crée une archive ZIP à la volée contenant les images sélectionnées et les CGU.
+    Enregistre un log JSON détaillé de l'opération.
     """
     tech_logger.info(f"Requête de téléchargement reçue de {request.remote_addr}")
+    start_time = time.time() # Démarrer le chronomètre
+
     try:
         data = request.get_json()
         if not data or 'matricules' not in data:
@@ -65,6 +71,7 @@ def download_zip():
         memory_file = io.BytesIO()
         
         nombre_fichiers = 0
+        found_matricules = []
         with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
             # 1. Ajoute les images correspondantes aux matricules
             tech_logger.info("Début du traitement de la sélection de photos.")
@@ -82,6 +89,7 @@ def download_zip():
                 if os.path.exists(image_path):
                     zf.write(image_path, arcname=image_filename)
                     nombre_fichiers += 1
+                    found_matricules.append(matricule) # Ajouter le matricule trouvé
                     tech_logger.info(f"Image '{image_filename}' trouvée et ajoutée au ZIP.")
                 else:
                     tech_logger.warning(f"Image '{image_filename}' non trouvée. Fichier ignoré.")
@@ -98,12 +106,24 @@ def download_zip():
                         zf.write(cgu_path, arcname=os.path.join('CGU', cgu_filename))
                         tech_logger.info(f"Fichier CGU '{cgu_filename}' ajouté au ZIP.")
 
+        # Calculs pour le log
+        zip_size_bytes = memory_file.tell()
+        generation_time_sec = round(time.time() - start_time, 2)
+
+        # Création du payload de log au format JSON
+        log_payload = {
+            "timestamp": time.strftime('%Y-%m-%d %H:%M:%S'),
+            "clientIp": request.remote_addr,
+            "fileCount": nombre_fichiers,
+            "zipSizeBytes": zip_size_bytes,
+            "foundMatricules": found_matricules,
+            "generationTimeSec": generation_time_sec
+        }
+        app_logger.info(json.dumps(log_payload, ensure_ascii=False))
+
         # Se positionner au début du fichier en mémoire avant de l'envoyer
         memory_file.seek(0)
         
-        # Log applicatif
-        app_logger.info(f"IP: {request.remote_addr}, Fichiers téléchargés: {nombre_fichiers}")
-
         tech_logger.info(f"Envoi du fichier ZIP à {request.remote_addr} avec {nombre_fichiers} fichier(s).")
         return send_file(
             memory_file,
@@ -115,6 +135,14 @@ def download_zip():
     except Exception as e:
         # Log l'erreur côté serveur pour le débogage
         tech_logger.error(f"Une erreur est survenue lors de la création du ZIP pour {request.remote_addr}: {e}", exc_info=True)
+        # Optionnel: logger un événement d'erreur au format JSON également
+        log_payload = {
+            "timestamp": time.strftime('%Y-%m-%d %H:%M:%S'),
+            "eventType": "DOWNLOAD_ERROR",
+            "clientIp": request.remote_addr,
+            "error": str(e)
+        }
+        app_logger.error(json.dumps(log_payload, ensure_ascii=False))
         return jsonify({"error": "Une erreur interne est survenue sur le serveur."}), 500
 
 if __name__ == '__main__':

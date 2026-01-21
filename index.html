@@ -61,6 +61,37 @@
 
         /* Ajustement du widget Sketch pour ne montrer qu'un bouton */
         .esri-sketch__panel { background: transparent !important; box-shadow: none !important; }
+        /* Styles pour la fenêtre d'instructions */
+        #instructions-window {
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            width: 250px;
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 14px;
+            color: #333;
+        }
+        #instructions-window h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+            color: #0079c1; /* Couleur du titre */
+        }
+        #instructions-window ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+        #instructions-window li {
+            padding: 2px 0;
+            line-height: 1.4;
+        }
     </style>
 </head>
 
@@ -88,6 +119,15 @@
             <button id="clearBtn" class="btn-clear">VIDER LA LISTE</button>
             <button id="zipBtn" class="btn-csv">TÉLÉCHARGER LE .ZIP</button>
         </div>
+    </div>
+
+    <div id="instructions-window">
+        <h4>Instructions de téléchargement</h4>
+        <ul>
+            <li>Sélectionner les éléments (rectangle)</li>
+            <li>Appuyer sur <strong>TÉLÉCHARGER LE ZIP</strong></li>
+            <li>10 éléments max</li>
+        </ul>
     </div>
 
     <script>

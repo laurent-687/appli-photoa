@@ -45,7 +45,7 @@
         #liste { flex: 1; overflow-y: auto; margin-bottom: 15px; }
         
         .item-card { 
-            position: relative; background: #333; padding: 12px; margin-bottom: 10px; 
+            position: relative; background: #333; padding: 8px; margin-bottom: 10px; 
             border-left: 5px solid #0079c1; border-radius: 4px;
             font-size: 11px;
         }
@@ -153,6 +153,23 @@
             let selectionData = [];
 
             view.when(() => {
+                // Définition de la classe d'étiquetage SANS contraintes d'échelle
+                const labelClass = {
+                    labelExpressionInfo: { expression: "Text($feature.date, 'YYYY')" },
+                    labelPlacement: "center-right",
+                    symbol: {
+                        type: "text",
+                        color: "black",
+                        haloColor: "white",
+                        haloSize: "1px",
+                        font: {
+                            size: "10pt",
+                            family: "Arial",
+                            weight: "bold"
+                        }
+                    }
+                };
+
                 // Add the filter panel to the top-left of the view
                 view.ui.add(filterPanel, "top-left");
                 filterPanel.style.display = "block"; // Make it visible
@@ -163,6 +180,23 @@
                     // Masquer les points en attendant que le filtre par décennie soit calculé et appliqué.
                     layer.definitionExpression = "web_disp = 'O' AND 1=0";
                 });
+
+                // --- DÉBUT : NOUVELLE LOGIQUE DE VISIBILITÉ MANUELLE DES ÉTIQUETTES ---
+                function setLabelingForZoom(zoom) {
+                    // La plage de zoom souhaitée est de 15 à 19 inclus.
+                    const showLabels = zoom >= 15 && zoom <= 19;
+                    allLayers.forEach(layer => {
+                        // Applique ou retire la configuration d'étiquetage en fonction du zoom
+                        layer.labelingInfo = showLabels ? [labelClass] : [];
+                    });
+                }
+
+                // Observe les changements de zoom pour appliquer la logique
+                view.watch('zoom', setLabelingForZoom);
+                
+                // Applique la logique une fois au chargement initial de la vue
+                view.when(() => setLabelingForZoom(view.zoom));
+                // --- FIN : NOUVELLE LOGIQUE DE VISIBILITÉ ---
 
                 // --- DÉBUT : LOGIQUE DU FILTRE PAR DÉCENNIE (CODÉ EN DUR) ---
                 const dateField = "date"; // Nom du champ de date à utiliser pour le filtre
@@ -210,7 +244,7 @@
                         filterExpression = decadeClauses.join(" OR ");
                     }
 
-                    // Appliquer le filtre à toutes les couches, en conservant le filtre web_disp
+                    // Appliquer le filtre à toutes les couches
                     allLayers.forEach(layer => {
                         layer.definitionExpression = `web_disp = 'O' AND (${filterExpression})`;
                     });
@@ -331,7 +365,7 @@
                 btn.innerHTML = "Génération...";
                 btn.disabled = true;
 
-                fetch("/download-zip", {
+                fetch("http://127.0.0.1:5000/download-zip", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ matricules: matricules })

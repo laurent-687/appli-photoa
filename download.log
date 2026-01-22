@@ -1,4 +1,6 @@
-2026-01-20 20:44:21,871 - IP: 127.0.0.1, Fichiers téléchargés: 2
-2026-01-21 10:27:57,615 - IP: 127.0.0.1, Fichiers téléchargés: 3
-{"timestamp": "2026-01-21 10:47:13", "clientIp": "127.0.0.1", "fileCount": 3, "zipSizeBytes": 122347, "foundMatricules": ["1935_IGNx_0001_100_Px_0001_0033", "1935_IGNx_0001_100_Px_0001_0031", "1935_IGNx_0001_100_Px_0001_0032"], "generationTimeSec": 0.01}
-{"timestamp": "2026-01-21 10:47:24", "clientIp": "127.0.0.1", "fileCount": 3, "zipSizeBytes": 122347, "foundMatricules": ["1935_IGNx_0001_100_Px_0001_0033", "1935_IGNx_0001_100_Px_0001_0031", "1935_IGNx_0001_100_Px_0001_0032"], "generationTimeSec": 0.01}
+{"timestamp": "2026-01-22 09:39:42", "clientIp": "127.0.0.1", "fileCount": 5, "zipSizeBytes": 172638, "foundMatricules": ["1935_IGNx_0001_100_Px_0001_0027", "1935_IGNx_0001_100_Px_0001_0025", "1935_IGNx_0001_100_Px_0001_0028", "1935_IGNx_0001_100_Px_0001_0029", "1935_IGNx_0001_100_Px_0001_0026"], "generationTimeSec": 0.05}
+{"timestamp": "2026-01-22 09:52:09", "clientIp": "127.0.0.1", "fileCount": 2, "zipSizeBytes": 97188, "foundMatricules": ["1935_IGNx_0001_100_Px_0001_0033", "1935_IGNx_0001_100_Px_0001_0032"], "generationTimeSec": 0.02}
+{"timestamp": "2026-01-22 10:02:08", "clientIp": "127.0.0.1", "fileCount": 2, "zipSizeBytes": 89731, "foundMatricules": ["1935_IGNx_0001_100_Px_0001_0030", "1935_IGNx_0001_100_Px_0001_0031"], "generationTimeSec": 0.02}
+{"timestamp": "2026-01-22 10:53:27", "clientIp": "127.0.0.1", "fileCount": 2, "zipSizeBytes": 89731, "foundMatricules": ["1935_IGNx_0001_100_Px_0001_0030", "1935_IGNx_0001_100_Px_0001_0031"], "generationTimeSec": 0.02}
+{"timestamp": "2026-01-22 10:57:36", "clientIp": "127.0.0.1", "fileCount": 1, "zipSizeBytes": 64572, "foundMatricules": ["1935_IGNx_0001_100_Px_0001_0030"], "generationTimeSec": 0.01}
+{"timestamp": "2026-01-22 10:57:52", "clientIp": "127.0.0.1", "fileCount": 2, "zipSizeBytes": 89731, "foundMatricules": ["1935_IGNx_0001_100_Px_0001_0030", "1935_IGNx_0001_100_Px_0001_0031"], "generationTimeSec": 0.02}

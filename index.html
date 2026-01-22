@@ -3,16 +3,16 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
-    <title>ArcGIS - Outil Rectangle Unique</title>
+    <title>PhotoA - Outil Rectangle Unique</title>
 
     <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css" />
     <script src="https://js.arcgis.com/4.28/"></script>
 
     <style>
-        body { display: grid; grid-template-columns: 1fr 350px; height: 100vh; margin: 0; font-family: 'Segoe UI', sans-serif; }
+        body { display: grid; grid-template-columns: 1fr 250px; height: 100vh; margin: 0; font-family: 'Segoe UI', sans-serif; }
         #viewDiv { position: relative; background-color: #eee; }
         #filterPanel { width: 150px; padding: 10px; background: rgba(60, 60, 60, 0.8); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border-radius: 4px; }
-        #sidePanel { width: 350px; padding: 15px; background: #242424; color: white; display: flex; flex-direction: column; box-shadow: -2px 0 10px rgba(0,0,0,0.3); }
+        #sidePanel { padding: 15px; background: #242424; color: white; display: flex; flex-direction: column; box-shadow: -2px 0 10px rgba(0,0,0,0.3); }
         
         .header-panel { border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 15px; }
         h2 { margin: 0; font-size: 1.2em; }
@@ -47,6 +47,7 @@
         .item-card { 
             position: relative; background: #333; padding: 12px; margin-bottom: 10px; 
             border-left: 5px solid #0079c1; border-radius: 4px;
+            font-size: 11px;
         }
         .item-card strong { color: #00b0ff; }
         
@@ -267,11 +268,16 @@
                 });
             }
 
+            function getItemId(item) {
+                // Utilise OBJECTID, FID, ou une sérialisation JSON comme clé unique fiable
+                return item.OBJECTID || item.FID || JSON.stringify(item);
+            }
+
             function ajouterALaListe(attr) {
                 if (selectionData.length >= 10) { warningMsg.style.display = "block"; return; }
                 
-                const idKey = attr.OBJECTID || attr.FID || JSON.stringify(attr);
-                if (selectionData.find(item => (item.OBJECTID || item.FID) === idKey)) return;
+                const idKey = getItemId(attr);
+                if (selectionData.some(item => getItemId(item) === idKey)) return;
 
                 if (document.getElementById("empty-msg")) document.getElementById("empty-msg").remove();
 
@@ -289,7 +295,7 @@
                 removeBtn.className = "btn-remove";
                 removeBtn.innerHTML = "&times;";
                 removeBtn.onclick = () => {
-                    selectionData = selectionData.filter(item => (item.OBJECTID || item.FID) !== idKey);
+                    selectionData = selectionData.filter(item => getItemId(item) !== idKey);
                     card.remove();
                     updateUI();
                 };

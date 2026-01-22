@@ -236,18 +236,18 @@
     <div id="initial-modal-overlay">
         <div id="initial-modal-window">
             <div class="modal-header">
-                <h3>Bienvenue sur PhotoA !</h3>
+                <h3>Bienvenue sur le POC PhotoA !</h3>
                 <span class="close-button">&times;</span>
             </div>
             <div class="modal-body">
                 <p>
-                    Photographies aériennes de la Nouvelle-Calédonie disponibles en téléchargement
+                    Voici les conditions d'utilation de cette application 
                 </p>
                 <p>
-                    Ces images correspondent à la numérisation de photographies anciennes issues de caméras analogiques ou à des fichiers plus récents directement issus des caméras numériques embarquées dans les aéronefs.
+                    Ces images ......
                 </p>
                 <p>
-                    Elles appartiennent au gouvernement de la Nouvelle-Calédonie ou à ses partenaires.
+                    Elles appartiennent ......
                 </p>
                 <p>
                     Les points qui s’affichent sur le fond de carte correspondent aux centres de prise de vue des clichés.
@@ -256,10 +256,10 @@
                     Chaque couleur correspond à une décennie de prise de vue (par exemple 1980 à 1989).
                 </p>
                 <p>
-                    L’utilisation de cette donnée implique le respect des conditions générales d’utilisation (CGU) des données géographiques numériques du service topographique de la DITTT.
+                    L’utilisation de cette donnée implique le respect des conditions générales d’utilisation (CGU) .....
                 </p>
                 <label class="do-not-show-again-label">
-                    <input type="checkbox" id="do-not-show-again"> Ne plus afficher cet écran au démarrage
+                    <input type="checkbox" id="do-not-show-again"> J'accepte les conditions d'utilisation ci-dessus
                 </label>
             </div>
             <div class="modal-footer">
@@ -502,7 +502,7 @@
                 btn.innerHTML = "Génération...";
                 btn.disabled = true;
 
-                fetch("http://127.0.0.1:5000/download-zip", {
+                fetch("/download-zip", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ matricules: matricules })

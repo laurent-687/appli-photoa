@@ -93,6 +93,108 @@
             padding: 2px 0;
             line-height: 1.4;
         }
+
+        /* Styles pour la fenêtre modale d'introduction */
+        #initial-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999; /* Valeur très élevée pour être au-dessus de tout */
+        }
+
+        #initial-modal-window {
+            background-color: white;
+            color: #333;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 600px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            background-color: #f0f0f0;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.5em;
+            color: #0079c1;
+        }
+
+        .close-button {
+            font-size: 2em;
+            font-weight: bold;
+            color: #888;
+            cursor: pointer;
+        }
+
+        .close-button:hover {
+            color: #555;
+        }
+
+        .modal-body {
+            padding: 20px;
+            line-height: 1.6;
+            flex-grow: 1; /* Permet au corps de prendre l'espace disponible */
+            overflow-y: auto; /* Ajoute un défilement si le contenu est trop long */
+        }
+
+        .modal-body ul {
+            list-style-type: disc;
+            margin-left: 20px;
+            padding-left: 0;
+        }
+
+        .modal-body li {
+            margin-bottom: 8px;
+        }
+
+        .do-not-show-again-label {
+            display: block;
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        #do-not-show-again {
+            margin-right: 5px;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #ddd;
+            background-color: #f0f0f0;
+            text-align: right;
+        }
+
+        #modal-close-btn {
+            background-color: #0079c1;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+        }
+
+        #modal-close-btn:hover {
+            background-color: #005a96;
+        }
     </style>
 </head>
 
@@ -129,6 +231,41 @@
             <li>Appuyer sur <strong>TÉLÉCHARGER LE ZIP</strong></li>
             <li>10 éléments max</li>
         </ul>
+    </div>
+
+    <div id="initial-modal-overlay">
+        <div id="initial-modal-window">
+            <div class="modal-header">
+                <h3>Bienvenue sur PhotoA !</h3>
+                <span class="close-button">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Photographies aériennes de la Nouvelle-Calédonie disponibles en téléchargement
+                </p>
+                <p>
+                    Ces images correspondent à la numérisation de photographies anciennes issues de caméras analogiques ou à des fichiers plus récents directement issus des caméras numériques embarquées dans les aéronefs.
+                </p>
+                <p>
+                    Elles appartiennent au gouvernement de la Nouvelle-Calédonie ou à ses partenaires.
+                </p>
+                <p>
+                    Les points qui s’affichent sur le fond de carte correspondent aux centres de prise de vue des clichés.
+                </p>
+                <p>
+                    Chaque couleur correspond à une décennie de prise de vue (par exemple 1980 à 1989).
+                </p>
+                <p>
+                    L’utilisation de cette donnée implique le respect des conditions générales d’utilisation (CGU) des données géographiques numériques du service topographique de la DITTT.
+                </p>
+                <label class="do-not-show-again-label">
+                    <input type="checkbox" id="do-not-show-again"> Ne plus afficher cet écran au démarrage
+                </label>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-close-btn">Fermer</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -403,6 +540,47 @@
                 updateUI();
                 sketchLayer.removeAll();
             };
+
+            // --- LOGIQUE DE LA FENÊTRE MODALE D'INTRODUCTION ---
+            const initialModalOverlay = document.getElementById("initial-modal-overlay");
+            const closeButtons = document.querySelectorAll(".close-button, #modal-close-btn");
+            const doNotShowAgainCheckbox = document.getElementById("do-not-show-again");
+
+            // Fonction pour masquer le modal
+            function hideInitialModal() {
+                initialModalOverlay.style.display = "none";
+            }
+
+            // Vérifie si le modal a déjà été masqué
+            const isModalDismissed = localStorage.getItem('initialModalDismissed');
+
+            if (isModalDismissed === 'true') {
+                hideInitialModal();
+            } else {
+                initialModalOverlay.style.display = "flex"; // Afficher le modal au démarrage
+            }
+
+            // Gère les clics sur les boutons de fermeture
+            closeButtons.forEach(button => {
+                button.addEventListener("click", () => {
+                    if (doNotShowAgainCheckbox.checked) {
+                        localStorage.setItem('initialModalDismissed', 'true');
+                    }
+                    hideInitialModal();
+                });
+            });
+
+            // Permet également de masquer si l'utilisateur clique en dehors de la fenêtre modale elle-même (sur l'overlay)
+            initialModalOverlay.addEventListener("click", (e) => {
+                if (e.target === initialModalOverlay) {
+                    if (doNotShowAgainCheckbox.checked) {
+                        localStorage.setItem('initialModalDismissed', 'true');
+                    }
+                    hideInitialModal();
+                }
+            });
+            // --- FIN LOGIQUE FENÊTRE MODALE ---
+
         });
     </script>
 </body>
